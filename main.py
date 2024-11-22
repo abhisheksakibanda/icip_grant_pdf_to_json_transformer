@@ -1,3 +1,4 @@
+import argparse
 import json
 import tkinter as tk
 from tkinter.filedialog import askopenfilename, asksaveasfilename
@@ -34,7 +35,7 @@ def extract_text_from_pdf(path: str) -> Optional[str]:
 
         # Iterate through all pages in the PDF
         for page_num in range(len(doc)):
-            page = doc[page_num]
+            page: pymupdf.Page = doc[page_num]
 
             # Extract the plain text from the page
             page_text = page.get_text("text")
@@ -56,25 +57,47 @@ def extract_text_from_pdf(path: str) -> Optional[str]:
         return None
 
 
-def main() -> None:
-    root = tk.Tk()
-    root.withdraw()
-    pdf_path = askopenfilename(filetypes=[("PDF files", "*.pdf")])
-    if not pdf_path:
-        print("No PDF file selected.")
-        return
+def main():
+    # Parse CLI arguments
+    parser = argparse.ArgumentParser(description="PDF to JSON Transformer")
+    parser.add_argument("--input", help="Path to the input PDF file", type=str)
+    parser.add_argument("--output", help="Path to save the output JSON file", type=str)
+    args = parser.parse_args()
 
-    text = extract_text_from_pdf(pdf_path)
+    # Determine execution mode (CLI or GUI)
+    input_file = args.input
+    output_file = args.output
+
+    # GUI fallback logic
+    if not input_file or not output_file:
+        root = tk.Tk()
+        root.withdraw()
+
+    # Prompt for an input file if not provided
+    if not input_file:
+        input_file = askopenfilename(filetypes=[("PDF files", "*.pdf")])
+        if not input_file:
+            print("No PDF file selected.")
+            return
+
+    # Process the PDF file
+    print(f"Processing PDF: {input_file}")
+    text = extract_text_from_pdf(input_file)
     if text is None:
         print("Failed to extract text from PDF.")
         return
 
-    json_path = asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
-    if json_path:
-        save_to_json(text, json_path)
-    else:
-        print("No file selected, saving to default path (./output.json)...")
-        save_to_json(text)
+    # Prompt for an output file if not provided
+    if not output_file:
+        output_file = asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
+        if not output_file:
+            print("No file selected for saving output. Defaulting to './output.json'...")
+            output_file = "output.json"
+
+    # Save the processed data to JSON
+    print(f"Saving JSON to: {output_file}")
+    save_to_json(text, output_file)
+    print("Processing complete!")
 
 
 if __name__ == "__main__":
