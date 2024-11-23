@@ -1,3 +1,13 @@
+def sanitize_text(text: str) -> str:
+    import re
+
+    field_value: str = text.split(":")[-1].strip()
+    return re.sub(pattern=r'\s+', repl=' ', string=field_value)
+
+def sanitize_amount(amount: str) -> float:
+    return float(amount.split()[-1].replace(",", "").replace("$", "").strip())
+
+
 def format_json(data: dict) -> dict:
     # Extract GCPF/FPSC number from the details section
     details_text = data["details"]["text"]
@@ -14,10 +24,11 @@ def format_json(data: dict) -> dict:
     agreement = None
     for row in data["tables"][0]:
         if "Recipient Name" in row.get("Column_0", ""):
-            recipient_name = row["Column_0"].split(":")[1].strip().replace("\n", "")
+            recipient_name = sanitize_text(row.get("Column_0", ""))
             vendor_number = int(row.get("Column_1", "").split(":")[-1].strip())
-            program = row.get("Column_2", "").split(":")[-1].strip().replace("\n", "")
-            agreement = row.get("Column_3", "").split(":")[-1].strip().replace("\n", "")
+            program = sanitize_text(row.get("Column_2", ""))
+            agreement = sanitize_text(row.get("Column_3", ""))
+            break
 
     # Extract grant contribution details from the table
     fiscal_years_data = {}  # Dictionary to group data by fiscal year
@@ -38,9 +49,8 @@ def format_json(data: dict) -> dict:
                             "authority_code": row.get("Column_3", "").strip(),
                             "gl_account": int(row.get("Column_4", "").strip()),
                             "internal_order": int(row.get("Column_5", "").strip()),
-                            "description": row.get("Column_6", "").replace("\n", ""),
-                            "amount": float(
-                                row.get("Column_7", "0").split()[-1].replace(",", "").replace("$", "").strip())
+                            "description": sanitize_text(row.get("Column_6", "")),
+                            "amount": sanitize_amount(row.get("Column_7", ""))
                         }
 
                         # Add the entry to the fiscal year's list
@@ -53,8 +63,7 @@ def format_json(data: dict) -> dict:
             # Check if the row contains the total payment issued
             if "Total Payment Issued" in row.get("Column_0", ""):
                 try:
-                    total_payment_issued = float(
-                        row.get("Column_1", "0").split()[-1].replace(",", "").replace("$", "").strip())
+                    total_payment_issued = sanitize_amount(row.get("Column_1", ""))
                 except (ValueError, IndexError) as e:
                     print(f"Error processing total payment issued: {row}. Error: {e}")
 
@@ -67,12 +76,12 @@ def format_json(data: dict) -> dict:
     # Organize data into the required structure
     final_data = {
         "gcpf_number": gcpf_number,
-        "grant_contribution_details": grant_contribution_details,
-        "total_payment_issued": total_payment_issued,
         "recipient_name": recipient_name,
         "vendor_number": vendor_number,
         "program": program,
-        "agreement": agreement
+        "agreement": agreement,
+        "grant_contribution_details": grant_contribution_details,
+        "total_payment_issued": total_payment_issued,
     }
 
     return final_data

@@ -20,7 +20,7 @@ def save_to_json(data: str, save_path: str = 'output.json') -> None:
         cleaned_json = json_cleanup(data_dict)
 
         with open(save_path, 'w', encoding='utf-8') as json_file:
-            json.dump(cleaned_json, json_file, indent=4, ensure_ascii=False)
+            json.dump(cleaned_json, json_file, indent=2, ensure_ascii=False)
     except (json.JSONDecodeError, KeyError, TypeError) as e:
         print(f"Error processing JSON data: {e}")
 
@@ -59,44 +59,44 @@ def extract_text_from_pdf(path: str) -> Optional[str]:
 
 def main():
     # Parse CLI arguments
-    parser = argparse.ArgumentParser(description="PDF to JSON Transformer")
-    parser.add_argument("--input", help="Path to the input PDF file", type=str)
-    parser.add_argument("--output", help="Path to save the output JSON file", type=str)
+    parser = argparse.ArgumentParser(description="ICIP Grant PDF to JSON Transformer")
+    parser.add_argument("--pdf", "-p", help="Path to the input PDF file", type=str)
+    parser.add_argument("--json", "-j", help="Path to save the output JSON file", type=str)
     args = parser.parse_args()
 
     # Determine execution mode (CLI or GUI)
-    input_file = args.input
-    output_file = args.output
+    pdf_file = args.pdf
+    json_file = args.json
 
     # GUI fallback logic
-    if not input_file or not output_file:
+    if not pdf_file or not json_file:
         root = tk.Tk()
         root.withdraw()
 
     # Prompt for an input file if not provided
-    if not input_file:
-        input_file = askopenfilename(filetypes=[("PDF files", "*.pdf")])
-        if not input_file:
+    if not pdf_file:
+        pdf_file = askopenfilename(filetypes=[("PDF files", "*.pdf")])
+        if not pdf_file:
             print("No PDF file selected.")
             return
 
     # Process the PDF file
-    print(f"Processing PDF: {input_file}")
-    text = extract_text_from_pdf(input_file)
+    print(f"Processing PDF: {pdf_file}")
+    text = extract_text_from_pdf(pdf_file)
     if text is None:
         print("Failed to extract text from PDF.")
         return
 
     # Prompt for an output file if not provided
-    if not output_file:
-        output_file = asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
-        if not output_file:
+    if not json_file:
+        json_file = asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
+        if not json_file:
             print("No file selected for saving output. Defaulting to './output.json'...")
-            output_file = "output.json"
+            json_file = "output.json"
 
     # Save the processed data to JSON
-    print(f"Saving JSON to: {output_file}")
-    save_to_json(text, output_file)
+    print(f"Saving JSON to: {json_file}")
+    save_to_json(text, json_file)
     print("Processing complete!")
 
 
